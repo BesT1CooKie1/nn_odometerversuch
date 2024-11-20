@@ -140,5 +140,5 @@ if __name__ == "__main__":
         print(f"## Kennwerte für Boden {i+1}")
         boden.print_result()
         print("\n")
-    # Darstellung der Porenzahl in Abhängigkeit von der Spannung
+    # Darstellung der Porenzahl in Abhängigkeit von der Spannungasdasd
 
