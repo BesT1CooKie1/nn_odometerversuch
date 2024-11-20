@@ -134,10 +134,11 @@ class Boden():
 
 if __name__ == "__main__":
     # Darstellung von 5 Testwertsätzen
-    for i in range(5):8
+    for i in range(5):
         test_values = generate_test_values()
         boden = Boden(test_values["Cc"], test_values["Cs"], test_values["e0"], test_values["sigma0"], test_values["delta_sigma"])
         print(f"## Kennwerte für Boden {i+1}")
         boden.print_result()
         print("\n")
+    # Darstellung der Porenzahl in Abhängigkeit von der Spannung
 
