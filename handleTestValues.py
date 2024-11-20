@@ -32,7 +32,7 @@ def generate_test_values():
     e0 = generate_initial_porosity()
     sigma0 = generate_initial_stress()
     delta_sigma = generate_additional_stress()
-    # testssd4
+    # testssd4s
     return {
         "Cc": Cc,
         "Cs": Cs,
