@@ -16,7 +16,6 @@ Der **Ödometerversuch** wird genutzt, um das Setzungs- und Konsolidationsverhal
 ## Verzeichnisstruktur
 - **`main.py`**: Hauptskript zur Berechnung und Simulation von Testdaten.
 - **`handleTestValues.py`**: Generierung realistischer Input-Parameter für den Ödometerversuch.
-- **`image.png`**: Formeln und theoretische Grundlage des Projekts.
 
 ---
 
