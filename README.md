@@ -35,27 +35,6 @@ Der **Ödometerversuch** wird genutzt, um das Setzungs- und Konsolidationsverhal
 3. **Steifemodul bei Entlastung (Es, Entlastung):** Analog mit Cs.
 4. **Porenzahlen (e, Belastung und e, Entlastung):** Berechnet über logarithmische Beziehungen.
 
----
-
-## Installation
-
-1. **Repository klonen:**
-   ```bash
-   git clone https://github.com/DeinBenutzername/Oedometer-KI.git
-   cd Oedometer-KI
-   ```
-
-2. **Abhängigkeiten installieren:**
-   Stelle sicher, dass Python 3.7+ installiert ist, und installiere die benötigten Bibliotheken:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Skripte ausführen:**
-   Um Testwerte zu generieren und Berechnungen durchzuführen:
-   ```bash
-   python main.py
-   ```
 
 ---
 
@@ -63,13 +42,3 @@ Der **Ödometerversuch** wird genutzt, um das Setzungs- und Konsolidationsverhal
 - Integration eines maschinellen Lernmodells zur Vorhersage von Output-Parametern basierend auf realen Versuchsdaten.
 - Validierung des Algorithmus mit echten Testwerten aus Ödometerversuchen.
 - Optimierung der Parameterbereiche und Verbesserung der Datenqualität.
-
----
-
-## Lizenz
-Dieses Projekt steht unter der [MIT-Lizenz](LICENSE).
-
----
-
-## Kontakt
-Wenn du Fragen oder Anmerkungen hast, melde dich gerne bei [deine E-Mail-Adresse] oder erstelle ein Issue im Repository.
