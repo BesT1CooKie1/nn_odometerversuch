@@ -12,6 +12,7 @@ config.read('config.ini')
 # Zugriff auf Konfigurationswerte
 data_path = config['DEFAULT']['DataPath']
 debug_mode = config.getboolean('DEFAULT', 'Debug')
+newTestFilesOnStartup = config.getboolean('DEFAULT', 'NewTestFilesOnStartup')
 
 class Parent:
     """
@@ -205,21 +206,25 @@ class Soil(Parent):
 from handleNeuralNetwork import run_neural_network
 
 if __name__ == "__main__":
-    start_time = time.time()
-    for i in tqdm(range(1000000), desc="Generating soil properties"):
-        test_values = generate_test_values()
-        soil = Soil(test_values["Cc"], test_values["Cs"], test_values["e0"], test_values["sigma0"], test_values["delta_sigma"])
-        if debug_mode:
-            print(f"## Soil Properties {i+1}")
-            print(soil)
-            print("\n")
-    data = [soil.__dict__() for soil in Soil.instances]
-    save_dicts_to_csv(data, f"{data_path}soil_properties.csv")
-    end_time = time.time()
-    print(f"Time taken: {end_time - start_time:.2f} seconds")
+    if newTestFilesOnStartup:
+        # Generate soil properties and save to HDF5 file
+        start_time = time.time()
+        for i in tqdm(range(1000000), desc="Generating soil properties"):
+            test_values = generate_test_values()
+            soil = Soil(test_values["Cc"], test_values["Cs"], test_values["e0"], test_values["sigma0"], test_values["delta_sigma"])
+            if debug_mode:
+                print(f"## Soil Properties {i+1}")
+                print(soil)
+                print("\n")
+        data = [soil.__dict__() for soil in Soil.instances]
+        save_dicts_to_hdf5(data, f"{data_path}soil_properties.h5", key='data', overwrite=True)
+        end_time = time.time()
+        print(f"Time taken: {end_time - start_time:.2f} seconds")
+    else:
+        print("Data already exists. Skipping generation.")
 
     # Run the neural network process
-    file_path = f"{data_path}soil_properties.xlsx"
+    file_path = f"{data_path}soil_properties.h5"
     input_columns = ['Compression Index', 'Swelling Index', 'Initial Void Ratio', 'Initial Stress', 'Additional Stress']
     output_columns = ['Stiffness Modulus (Loading)', 'Stiffness Modulus (Unloading)', 'Void Ratio (Loading)', 'Void Ratio (Unloading)']
     for i in range(len(input_columns)):
