@@ -14,9 +14,19 @@ import numpy as np
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-import pandas as pd
-
 def load_data(file_path):
+    """
+    Loads data from a file.
+
+    Parameters:
+    file_path (str): The path to the data file. Supported formats are .xlsx, .csv, and .h5.
+
+    Returns:
+    pd.DataFrame: The loaded data as a pandas DataFrame.
+
+    Raises:
+    ValueError: If the file format is not supported.
+    """
     if file_path.endswith('.xlsx'):
         data = pd.read_excel(file_path, header=[0, 1])
     elif file_path.endswith('.csv'):
@@ -28,7 +38,20 @@ def load_data(file_path):
     return data
 
 def preprocess_data(data, input_columns, output_columns, test_size=0.2, random_state=42, augmentation_noise=0.0):
-    # Select the columns based on the second level of the multi-level columns
+    """
+    Preprocesses the data by splitting into training and test sets, scaling, and optionally adding noise.
+
+    Parameters:
+    data (pd.DataFrame): The input data.
+    input_columns (list): List of input column names.
+    output_columns (list): List of output column names.
+    test_size (float): Proportion of the dataset to include in the test split.
+    random_state (int): Random seed for reproducibility.
+    augmentation_noise (float): Standard deviation of Gaussian noise to add to the training data.
+
+    Returns:
+    tuple: Scaled and split data (X_train, X_test, y_train, y_test, scaler_X, scaler_y).
+    """
     X = data.loc[:, input_columns].values
     y = data.loc[:, output_columns].values
 
@@ -50,6 +73,18 @@ def preprocess_data(data, input_columns, output_columns, test_size=0.2, random_s
     return X_train, X_test, y_train, y_test, scaler_X, scaler_y
 
 def create_tensors(X_train, X_test, y_train, y_test):
+    """
+    Converts numpy arrays to PyTorch tensors.
+
+    Parameters:
+    X_train (np.ndarray): Training input data.
+    X_test (np.ndarray): Test input data.
+    y_train (np.ndarray): Training output data.
+    y_test (np.ndarray): Test output data.
+
+    Returns:
+    tuple: PyTorch tensors (X_train_tensor, X_test_tensor, y_train_tensor, y_test_tensor).
+    """
     X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
     X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
     y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
@@ -57,34 +92,73 @@ def create_tensors(X_train, X_test, y_train, y_test):
     return X_train_tensor, X_test_tensor, y_train_tensor, y_test_tensor
 
 class NeuralNetwork(nn.Module):
+    """
+    A neural network model with configurable hidden layers, activation functions, and dropout.
+
+    Parameters:
+    input_size (int): Number of input features.
+    output_size (int): Number of output features.
+    hidden_layer_sizes (list): List of sizes for hidden layers.
+    activation_function (str): Activation function to use ('ReLU', 'Sigmoid', 'Tanh').
+    dropout_rate (float): Dropout rate for regularization.
+    """
     def __init__(self, input_size, output_size, hidden_layer_sizes, activation_function, dropout_rate):
         super(NeuralNetwork, self).__init__()
         layers = []
         prev_size = input_size
 
-        # Dynamisch versteckte Schichten hinzufügen
+        # Add hidden layers dynamically
         for size in hidden_layer_sizes:
-            layers.append(nn.Linear(prev_size, size))  # Lineare Transformation
-            layers.append(nn.BatchNorm1d(size))       # Batch-Normalisierung
-            if activation_function == 'ReLU':         # Aktivierungsfunktion
+            layers.append(nn.Linear(prev_size, size))  # Linear transformation
+            layers.append(nn.BatchNorm1d(size))       # Batch normalization
+            if activation_function == 'ReLU':         # Activation function
                 layers.append(nn.ReLU())
             elif activation_function == 'Sigmoid':
                 layers.append(nn.Sigmoid())
             elif activation_function == 'Tanh':
                 layers.append(nn.Tanh())
-            layers.append(nn.Dropout(dropout_rate))   # Dropout zur Reduzierung von Overfitting
+            layers.append(nn.Dropout(dropout_rate))   # Dropout for reducing overfitting
             prev_size = size
 
-        # Ausgangsschicht
-        layers.append(nn.Linear(prev_size, output_size))  # Ausgabe der Zielwerte
+        # Output layer
+        layers.append(nn.Linear(prev_size, output_size))  # Output layer
         self.network = nn.Sequential(*layers)
 
     def forward(self, x):
+        """
+        Forward pass through the network.
+
+        Parameters:
+        x (torch.Tensor): Input tensor.
+
+        Returns:
+        torch.Tensor: Output tensor.
+        """
         return self.network(x)
 
 
 def train_model(model, criterion, optimizer, X_train_tensor, y_train_tensor, num_epochs, use_scheduler,
                 scheduler_step_size, scheduler_gamma, early_stopping, patience, scheduler_type):
+    """
+    Trains the neural network model.
+
+    Parameters:
+    model (nn.Module): The neural network model.
+    criterion (nn.Module): Loss function.
+    optimizer (torch.optim.Optimizer): Optimizer for training.
+    X_train_tensor (torch.Tensor): Training input data.
+    y_train_tensor (torch.Tensor): Training output data.
+    num_epochs (int): Number of training epochs.
+    use_scheduler (bool): Whether to use a learning rate scheduler.
+    scheduler_step_size (int): Step size for the scheduler.
+    scheduler_gamma (float): Gamma value for the scheduler.
+    early_stopping (bool): Whether to use early stopping.
+    patience (int): Number of epochs to wait for improvement before stopping.
+    scheduler_type (str): Type of scheduler to use ('StepLR', 'CosineAnnealingLR').
+
+    Returns:
+    None
+    """
     if scheduler_type == 'StepLR':
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma)
     elif scheduler_type == 'CosineAnnealingLR':
@@ -118,6 +192,21 @@ def train_model(model, criterion, optimizer, X_train_tensor, y_train_tensor, num
                     break
 
 def evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, output_columns, metrics):
+    """
+    Evaluates the neural network model on the test data.
+
+    Parameters:
+    model (nn.Module): The neural network model.
+    criterion (nn.Module): Loss function.
+    X_test_tensor (torch.Tensor): Test input data.
+    y_test_tensor (torch.Tensor): Test output data.
+    scaler_y (StandardScaler): Scaler for the output data.
+    output_columns (list): List of output column names.
+    metrics (list): List of metrics to evaluate ('MSE', 'MAE', 'R2').
+
+    Returns:
+    None
+    """
     model.eval()
     y_test_pred = model(X_test_tensor)
     test_loss = criterion(y_test_pred, y_test_tensor)
@@ -142,7 +231,6 @@ def evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, out
 
         # Plot the predictions if enabled in the config
         plot_predictions(y_test, y_test_pred, output_columns, config)
-
 def plot_predictions(y_test, y_pred, output_columns, config):
     """
     Plots the actual vs. predicted values for each output variable.
@@ -152,6 +240,9 @@ def plot_predictions(y_test, y_pred, output_columns, config):
     y_pred (np.ndarray): The predicted values from the model.
     output_columns (list): List of output column names.
     config (ConfigParser): ConfigParser object to read the configuration.
+
+    Returns:
+    None
     """
     # Check if plotting is enabled in the config
     if not config.getboolean('Visualization', 'EnablePlot', fallback=False):
@@ -177,6 +268,18 @@ def plot_predictions(y_test, y_pred, output_columns, config):
 
 
 def run_neural_network(file_path, input_columns, output_columns, mode=None):
+    """
+    Runs the neural network training and evaluation pipeline.
+
+    Parameters:
+    file_path (str): Path to the data file.
+    input_columns (list): List of input column names.
+    output_columns (list): List of output column names.
+    mode (str, optional): Mode for configuration selection. Defaults to None.
+
+    Returns:
+    None
+    """
     if mode == None:
         conf = "NeuralNetworkDefault"
     elif mode == "OedometerTest":
