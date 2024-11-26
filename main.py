@@ -3,7 +3,35 @@ from handleTestValues import generate_test_values
 import pandas as pd
 from handleDataframes import save_dicts_to_xlsx
 
-class Soil():
+class Parent():
+    def __dict__(self):
+        """
+        Return a dictionary representation of the Soil object.
+
+        Returns
+        -------
+        dict
+            Dictionary containing input and output values of the Soil object.
+        """
+        return {
+            "Index": self.index,
+            **{f"{key}": value for key, value in self.input_values.items()},
+            **{f"{key}": value for key, value in self.output_values.items()}
+        }
+
+    def print_result(self):
+        """
+        Print the input parameters and calculated results.
+        """
+        print("# Input Parameters:")
+        for key, value in self.input_values.items():
+            print(f"     {key}:", round(value, 2), "[-]" if "Index" in key else "[kN/m²]")
+        print("# Output Results:")
+        for key, value in self.output_values.items():
+            print(f"     {key}:", round(value, 2), "[-]" if "Void Ratio" in key else "[kN/m²]")
+
+# Get __dict__ method from TestObjects class
+class Soil(Parent):
     """
     A class to represent soil properties and calculations.
 
@@ -29,8 +57,8 @@ class Soil():
         Void ratio for loading
     void_ratio_unloading : float
         Void ratio for unloading
-    instances : list
-        List of all Soil instances
+    input_values: dict
+    output_values: dict
     """
 
     instances = []
@@ -57,34 +85,34 @@ class Soil():
         self.initial_void_ratio = initial_void_ratio
         self.initial_stress = initial_stress
         self.additional_stress = additional_stress
+
+        self.input_values = {
+            "Compression Index": compression_index,
+            "Swelling Index": swelling_index,
+            "Initial Void Ratio": initial_void_ratio,
+            "Initial Stress": initial_stress,
+            "Additional Stress": additional_stress
+        }
+        self.output_values = {}
+        self.calculate_all_properties()
+        Soil.instances.append(self)
+
+    def calculate_all_properties(self):
         self.mean_stress = self.initial_stress + self.additional_stress / 2
         self.stiffness_modulus_loading = self.calculate_stiffness_modulus_loading()
         self.stiffness_modulus_unloading = self.calculate_stiffness_modulus_unloading()
         self.void_ratio_loading = self.calculate_void_ratio_loading(self.mean_stress)
         self.void_ratio_unloading = self.calculate_void_ratio_unloading(self.mean_stress)
-        Soil.instances.append(self)
 
     def calculate_stiffness_modulus_loading(self):
-        """
-        Calculate the stiffness modulus for loading considering mean stress.
-
-        Returns
-        -------
-        float
-            Stiffness modulus for loading
-        """
-        return (1 + self.initial_void_ratio) / self.compression_index * self.mean_stress
+        value = (1 + self.initial_void_ratio) / self.compression_index * self.mean_stress
+        self.output_values["Stiffness Modulus (Loading)"] = value
+        return value
 
     def calculate_stiffness_modulus_unloading(self):
-        """
-        Calculate the stiffness modulus for unloading considering mean stress.
-
-        Returns
-        -------
-        float
-            Stiffness modulus for unloading
-        """
-        return (1 + self.initial_void_ratio) / self.swelling_index * self.mean_stress
+        value = (1 + self.initial_void_ratio) / self.swelling_index * self.mean_stress
+        self.output_values["Stiffness Modulus (Unloading)"] = value
+        return value
 
     def calculate_void_ratio_loading(self, stress):
         """
@@ -100,7 +128,9 @@ class Soil():
         float
             Void ratio for loading
         """
-        return self.initial_void_ratio - self.compression_index * np.log(stress / self.initial_stress)
+        value = self.initial_void_ratio - self.compression_index * np.log(stress / self.initial_stress)
+        self.output_values["Void Ratio (Loading)"] = value
+        return value
 
     def calculate_void_ratio_unloading(self, stress):
         """
@@ -116,47 +146,9 @@ class Soil():
         float
             Void ratio for unloading
         """
-        return self.initial_void_ratio - self.swelling_index * np.log(stress / self.initial_stress)
-
-    def print_result(self):
-        """
-        Print the input parameters and calculated results.
-        """
-        print("# Material Parameters:")
-        print("     Compression Index:", round(self.compression_index, 2), "[-]")
-        print("     Swelling Index:", round(self.swelling_index, 2), "[-]")
-        print("     Initial Void Ratio:", round(self.initial_void_ratio, 2), "[-]")
-        print("     Initial Stress:", round(self.initial_stress, 2), "[kN/m²]")
-        print("     Additional Stress:", round(self.additional_stress, 2), "[kN/m²]")
-        print("# Calculated Results:")
-        print("     Mean Stress:", round(self.mean_stress, 2), "[kN/m²]")
-        print("     Stiffness Modulus (Loading):", round(self.stiffness_modulus_loading, 2), "[kN/m²]")
-        print("     Stiffness Modulus (Unloading):", round(self.stiffness_modulus_unloading, 2), "[kN/m²]")
-        print("     Void Ratio (Loading):", round(self.void_ratio_loading, 2), "[-]")
-        print("     Void Ratio (Unloading):", round(self.void_ratio_unloading, 2), "[-]")
-
-    def __dict__(self):
-        """
-        Return a dictionary representation of the Soil object.
-
-        Returns
-        -------
-        dict
-            Dictionary containing all attributes of the Soil object.
-        """
-        return {
-            "Index": self.index,
-            "Compression Index": self.compression_index,
-            "Swelling Index": self.swelling_index,
-            "Initial Void Ratio": self.initial_void_ratio,
-            "Initial Stress": self.initial_stress,
-            "Additional Stress": self.additional_stress,
-            "Mean Stress": self.mean_stress,
-            "Stiffness Modulus (Loading)": self.stiffness_modulus_loading,
-            "Stiffness Modulus (Unloading)": self.stiffness_modulus_unloading,
-            "Void Ratio (Loading)": self.void_ratio_loading,
-            "Void Ratio (Unloading)": self.void_ratio_unloading
-        }
+        value = self.initial_void_ratio - self.swelling_index * np.log(stress / self.initial_stress)
+        self.output_values["Void Ratio (Unloading)"] = value
+        return value
 
 if __name__ == "__main__":
     for i in range(2000):
