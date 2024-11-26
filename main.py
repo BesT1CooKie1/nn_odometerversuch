@@ -1,6 +1,7 @@
 import numpy as np
 from handleTestValues import generate_test_values
-from matplotlib import pyplot as plt
+import pandas as pd
+from handleDataframes import save_dicts_to_xlsx
 
 class Soil():
     """
@@ -28,7 +29,11 @@ class Soil():
         Void ratio for loading
     void_ratio_unloading : float
         Void ratio for unloading
+    instances : list
+        List of all Soil instances
     """
+
+    instances = []
     def __init__(self, compression_index: float, swelling_index: float, initial_void_ratio: float, initial_stress: float, additional_stress: float):
         """
         Constructs all the necessary attributes for the Soil object.
@@ -46,6 +51,7 @@ class Soil():
         additional_stress : float
             Change in stress
         """
+        self.index = len(Soil.instances) + 1
         self.compression_index = compression_index
         self.swelling_index = swelling_index
         self.initial_void_ratio = initial_void_ratio
@@ -56,6 +62,7 @@ class Soil():
         self.stiffness_modulus_unloading = self.calculate_stiffness_modulus_unloading()
         self.void_ratio_loading = self.calculate_void_ratio_loading(self.mean_stress)
         self.void_ratio_unloading = self.calculate_void_ratio_unloading(self.mean_stress)
+        Soil.instances.append(self)
 
     def calculate_stiffness_modulus_loading(self):
         """
@@ -128,10 +135,35 @@ class Soil():
         print("     Void Ratio (Loading):", round(self.void_ratio_loading, 2), "[-]")
         print("     Void Ratio (Unloading):", round(self.void_ratio_unloading, 2), "[-]")
 
+    def __dict__(self):
+        """
+        Return a dictionary representation of the Soil object.
+
+        Returns
+        -------
+        dict
+            Dictionary containing all attributes of the Soil object.
+        """
+        return {
+            "Index": self.index,
+            "Compression Index": self.compression_index,
+            "Swelling Index": self.swelling_index,
+            "Initial Void Ratio": self.initial_void_ratio,
+            "Initial Stress": self.initial_stress,
+            "Additional Stress": self.additional_stress,
+            "Mean Stress": self.mean_stress,
+            "Stiffness Modulus (Loading)": self.stiffness_modulus_loading,
+            "Stiffness Modulus (Unloading)": self.stiffness_modulus_unloading,
+            "Void Ratio (Loading)": self.void_ratio_loading,
+            "Void Ratio (Unloading)": self.void_ratio_unloading
+        }
+
 if __name__ == "__main__":
-    for i in range(5):
+    for i in range(2000):
         test_values = generate_test_values()
         soil = Soil(test_values["Cc"], test_values["Cs"], test_values["e0"], test_values["sigma0"], test_values["delta_sigma"])
         print(f"## Soil Properties {i+1}")
         soil.print_result()
         print("\n")
+    data = [soil.__dict__() for soil in Soil.instances]
+    save_dicts_to_xlsx(data, "soil_properties.xlsx", overwrite=True)
