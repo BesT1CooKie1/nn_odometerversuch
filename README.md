@@ -41,3 +41,9 @@ Der **Ödometerversuch** wird genutzt, um das Setzungs- und Konsolidationsverhal
 - Integration eines maschinellen Lernmodells zur Vorhersage von Output-Parametern basierend auf realen Versuchsdaten.
 - Validierung des Algorithmus mit echten Testwerten aus Ödometerversuchen.
 - Optimierung der Parameterbereiche und Verbesserung der Datenqualität.
+
+___
+
+## Ersten Ergebnisse
+
+![FirstOutput](00_Result_Prediction.png)
