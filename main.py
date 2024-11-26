@@ -1,7 +1,17 @@
+import configparser
 import numpy as np
+import time
+from tqdm import tqdm
 from handleTestValues import generate_test_values
-import pandas as pd
-from handleDataframes import save_dicts_to_xlsx
+from handleDataframes import save_dicts_to_xlsx, save_dicts_to_csv, save_dicts_to_hdf5
+
+# Laden der Konfigurationsdatei
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+# Zugriff auf Konfigurationswerte
+data_path = config['DEFAULT']['DataPath']
+debug_mode = config.getboolean('DEFAULT', 'Debug')
 
 class Parent:
     """
@@ -33,8 +43,8 @@ class Parent:
         """
         return {
             "Index": self.index,
-            **{f"{key}": value for key, value in self.input_values.items()},
-            **{f"{key}": value for key, value in self.output_values.items()}
+            **{f"Input - {key}": value for key, value in self.input_values.items()},
+            **{f"Output - {key}": value for key, value in self.output_values.items()}
         }
 
     def __str__(self):
@@ -191,12 +201,29 @@ class Soil(Parent):
         self.output_values["Void Ratio (Unloading)"] = value
         return value
 
+
+from handleNeuralNetwork import run_neural_network
+
 if __name__ == "__main__":
-    for i in range(2000):
+    start_time = time.time()
+    for i in tqdm(range(1000000), desc="Generating soil properties"):
         test_values = generate_test_values()
         soil = Soil(test_values["Cc"], test_values["Cs"], test_values["e0"], test_values["sigma0"], test_values["delta_sigma"])
-        print(f"## Soil Properties {i+1}")
-        print(soil)
-        print("\n")
+        if debug_mode:
+            print(f"## Soil Properties {i+1}")
+            print(soil)
+            print("\n")
     data = [soil.__dict__() for soil in Soil.instances]
-    save_dicts_to_xlsx(data, "soil_properties.xlsx", overwrite=True)
+    save_dicts_to_csv(data, f"{data_path}soil_properties.csv")
+    end_time = time.time()
+    print(f"Time taken: {end_time - start_time:.2f} seconds")
+
+    # Run the neural network process
+    file_path = f"{data_path}soil_properties.xlsx"
+    input_columns = ['Compression Index', 'Swelling Index', 'Initial Void Ratio', 'Initial Stress', 'Additional Stress']
+    output_columns = ['Stiffness Modulus (Loading)', 'Stiffness Modulus (Unloading)', 'Void Ratio (Loading)', 'Void Ratio (Unloading)']
+    for i in range(len(input_columns)):
+        input_columns[i] = "Input - " + input_columns[i]
+    for i in range(len(output_columns)):
+        output_columns[i] = "Output - " + output_columns[i]
+    run_neural_network(file_path, input_columns, output_columns)
