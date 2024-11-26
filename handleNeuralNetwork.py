@@ -1,23 +1,22 @@
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
+import configparser
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Load configuration
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+import pandas as pd
 
 def load_data(file_path):
-    """
-    Load data from a file.
-
-    Parameters:
-    file_path (str): The path to the file to load. Supported formats are .xlsx, .csv, and .h5.
-
-    Returns:
-    pd.DataFrame: The loaded data as a pandas DataFrame.
-
-    Raises:
-    ValueError: If the file format is not supported.
-    """
     if file_path.endswith('.xlsx'):
         data = pd.read_excel(file_path, header=[0, 1])
     elif file_path.endswith('.csv'):
@@ -28,20 +27,7 @@ def load_data(file_path):
         raise ValueError("Unsupported file format. Please use .xlsx, .csv, or .h5")
     return data
 
-def preprocess_data(data, input_columns, output_columns, test_size=0.2, random_state=42):
-    """
-    Preprocess the data by splitting into training and test sets and scaling.
-
-    Parameters:
-    data (pd.DataFrame): The data to preprocess.
-    input_columns (list): List of input column names.
-    output_columns (list): List of output column names.
-    test_size (float): The proportion of the dataset to include in the test split.
-    random_state (int): Random seed for reproducibility.
-
-    Returns:
-    tuple: Scaled training and test data, and the scalers used for X and y.
-    """
+def preprocess_data(data, input_columns, output_columns, test_size=0.2, random_state=42, augmentation_noise=0.0):
     # Select the columns based on the second level of the multi-level columns
     X = data.loc[:, input_columns].values
     y = data.loc[:, output_columns].values
@@ -57,21 +43,13 @@ def preprocess_data(data, input_columns, output_columns, test_size=0.2, random_s
     y_train = scaler_y.fit_transform(y_train)
     y_test = scaler_y.transform(y_test)
 
+    if augmentation_noise > 0:
+        noise = augmentation_noise * np.random.randn(*X_train.shape)
+        X_train += noise
+
     return X_train, X_test, y_train, y_test, scaler_X, scaler_y
 
 def create_tensors(X_train, X_test, y_train, y_test):
-    """
-    Convert numpy arrays to PyTorch tensors.
-
-    Parameters:
-    X_train (np.ndarray): Training input data.
-    X_test (np.ndarray): Test input data.
-    y_train (np.ndarray): Training output data.
-    y_test (np.ndarray): Test output data.
-
-    Returns:
-    tuple: PyTorch tensors for training and test data.
-    """
     X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
     X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
     y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
@@ -79,69 +57,67 @@ def create_tensors(X_train, X_test, y_train, y_test):
     return X_train_tensor, X_test_tensor, y_train_tensor, y_test_tensor
 
 class NeuralNetwork(nn.Module):
-    """
-    A simple feedforward neural network with two hidden layers.
-
-    Parameters:
-    input_size (int): The number of input features.
-    output_size (int): The number of output features.
-    """
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, hidden_layer_sizes, activation_function, dropout_rate):
         super(NeuralNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_size, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, output_size)
-        self.relu = nn.ReLU()
+        layers = []
+        prev_size = input_size
+
+        # Dynamisch versteckte Schichten hinzufügen
+        for size in hidden_layer_sizes:
+            layers.append(nn.Linear(prev_size, size))  # Lineare Transformation
+            layers.append(nn.BatchNorm1d(size))       # Batch-Normalisierung
+            if activation_function == 'ReLU':         # Aktivierungsfunktion
+                layers.append(nn.ReLU())
+            elif activation_function == 'Sigmoid':
+                layers.append(nn.Sigmoid())
+            elif activation_function == 'Tanh':
+                layers.append(nn.Tanh())
+            layers.append(nn.Dropout(dropout_rate))   # Dropout zur Reduzierung von Overfitting
+            prev_size = size
+
+        # Ausgangsschicht
+        layers.append(nn.Linear(prev_size, output_size))  # Ausgabe der Zielwerte
+        self.network = nn.Sequential(*layers)
 
     def forward(self, x):
-        """
-        Forward pass through the network.
+        return self.network(x)
 
-        Parameters:
-        x (torch.Tensor): Input tensor.
 
-        Returns:
-        torch.Tensor: Output tensor.
-        """
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+def train_model(model, criterion, optimizer, X_train_tensor, y_train_tensor, num_epochs, use_scheduler,
+                scheduler_step_size, scheduler_gamma, early_stopping, patience, scheduler_type):
+    if scheduler_type == 'StepLR':
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma)
+    elif scheduler_type == 'CosineAnnealingLR':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
 
-def train_model(model, criterion, optimizer, X_train_tensor, y_train_tensor, num_epochs=100):
-    """
-    Train the neural network model.
+    best_loss = float('inf')
+    patience_counter = 0
 
-    Parameters:
-    model (nn.Module): The neural network model.
-    criterion (nn.Module): The loss function.
-    optimizer (torch.optim.Optimizer): The optimizer.
-    X_train_tensor (torch.Tensor): Training input data.
-    y_train_tensor (torch.Tensor): Training output data.
-    num_epochs (int): Number of epochs to train the model.
-    """
-    for epoch in range(num_epochs):
+    for epoch in tqdm(range(num_epochs), desc="Training Progress"):
         model.train()
         y_pred = model(X_train_tensor)
         loss = criterion(y_pred, y_train_tensor)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+        if use_scheduler:
+            scheduler.step()
+
         if (epoch + 1) % 10 == 0:
-            print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+            print(f'\nEpoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
 
-def evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, output_columns):
-    """
-    Evaluate the neural network model on the test data.
+        if early_stopping:
+            if loss.item() < best_loss:
+                best_loss = loss.item()
+                patience_counter = 0
+            else:
+                patience_counter += 1
+                if patience_counter >= patience:
+                    print("Early stopping triggered")
+                    break
 
-    Parameters:
-    model (nn.Module): The neural network model.
-    criterion (nn.Module): The loss function.
-    X_test_tensor (torch.Tensor): Test input data.
-    y_test_tensor (torch.Tensor): Test output data.
-    scaler_y (StandardScaler): Scaler used for the output data.
-    output_columns (list): List of output column names.
-    """
+def evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, output_columns, metrics):
     model.eval()
     y_test_pred = model(X_test_tensor)
     test_loss = criterion(y_test_pred, y_test_tensor)
@@ -153,30 +129,91 @@ def evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, out
     for i, col in enumerate(output_columns):
         print(f'{col}:')
         print(f'  Tatsächlich: {y_test[0, i]:.2f}, Vorhergesagt: {y_test_pred[0, i]:.2f}')
-def run_neural_network(file_path, input_columns, output_columns, num_epochs=100):
+
+    if 'MSE' in metrics:
+        mse = mean_squared_error(y_test, y_test_pred)
+        print(f'MSE: {mse:.4f}')
+    if 'MAE' in metrics:
+        mae = mean_absolute_error(y_test, y_test_pred)
+        print(f'MAE: {mae:.4f}')
+    if 'R2' in metrics:
+        r2 = r2_score(y_test, y_test_pred)
+        print(f'R2: {r2:.4f}')
+
+        # Plot the predictions if enabled in the config
+        plot_predictions(y_test, y_test_pred, output_columns, config)
+
+def plot_predictions(y_test, y_pred, output_columns, config):
     """
-    Run the complete neural network pipeline: load data, preprocess, train, and evaluate.
+    Plots the actual vs. predicted values for each output variable.
 
     Parameters:
-    file_path (str): The path to the data file.
-    input_columns (list): List of input column names.
+    y_test (np.ndarray): The actual test values (ground truth).
+    y_pred (np.ndarray): The predicted values from the model.
     output_columns (list): List of output column names.
-    num_epochs (int): Number of epochs to train the model.
+    config (ConfigParser): ConfigParser object to read the configuration.
     """
+    # Check if plotting is enabled in the config
+    if not config.getboolean('Visualization', 'EnablePlot', fallback=False):
+        print("Plotting is disabled in the configuration.")
+        return
+
+    # Create subplots for each output column
+    num_outputs = len(output_columns)
+    plt.figure(figsize=(12, 6))
+
+    for i, col in enumerate(output_columns):
+        plt.subplot(1, num_outputs, i + 1)
+        plt.scatter(y_test[:, i], y_pred[:, i], alpha=0.6, label='Vorhersage')
+        plt.plot([y_test[:, i].min(), y_test[:, i].max()],
+                 [y_test[:, i].min(), y_test[:, i].max()], 'r--', label='Ideal')
+        plt.title(f'{col}\nTatsächlich vs. Vorhergesagt')
+        plt.xlabel('Tatsächlich')
+        plt.ylabel('Vorhergesagt')
+        plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
+def run_neural_network(file_path, input_columns, output_columns, mode=None):
+    if mode == None:
+        conf = "NeuralNetworkDefault"
+    elif mode == "OedometerTest":
+        conf = "NeuralNetworkOedometerTest"
+
+    num_epochs = config.getint(conf, 'NumEpochs')
+    learning_rate = config.getfloat(conf, 'LearningRate')
+    batch_size = config.getint(conf, 'BatchSize')
+    use_scheduler = config.getboolean(conf, 'UseScheduler')
+    scheduler_step_size = config.getint(conf, 'SchedulerStepSize')
+    scheduler_gamma = config.getfloat(conf, 'SchedulerGamma')
+    hidden_layer_sizes = [int(size) for size in config.get(conf, 'HiddenLayerSizes').split(',')]
+    activation_function = config.get(conf, 'ActivationFunction')
+    dropout_rate = config.getfloat(conf, 'DropoutRate')
+    early_stopping = config.getboolean(conf, 'EarlyStopping')
+    patience = config.getint(conf, 'Patience')
+    augmentation_noise = config.getfloat(conf, 'AugmentationNoise')
+    metrics = config.get(conf, 'Metrics').split(',')
+    scheduler_type = config.get(conf, 'SchedulerType')
+
     data = load_data(file_path)
+    if data is None:
+        raise ValueError("Data could not be loaded. Please check the file path and format.")
 
-    # Debug: Print the columns of the DataFrame
-    print("DataFrame columns:", data.columns)
+    print("Data loaded successfully:", data.head())  # Debugging line
 
-    X_train, X_test, y_train, y_test, scaler_X, scaler_y = preprocess_data(data, input_columns, output_columns)
+    X_train, X_test, y_train, y_test, scaler_X, scaler_y = preprocess_data(data, input_columns, output_columns,
+                                                                           augmentation_noise=augmentation_noise)
     X_train_tensor, X_test_tensor, y_train_tensor, y_test_tensor = create_tensors(X_train, X_test, y_train, y_test)
 
     input_size = X_train_tensor.shape[1]
     output_size = y_train_tensor.shape[1]
-    model = NeuralNetwork(input_size, output_size)
+    model = NeuralNetwork(input_size, output_size, hidden_layer_sizes, activation_function, dropout_rate)
 
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    train_model(model, criterion, optimizer, X_train_tensor, y_train_tensor, num_epochs)
-    evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, output_columns)
+    train_model(model, criterion, optimizer, X_train_tensor, y_train_tensor, num_epochs, use_scheduler,
+                scheduler_step_size, scheduler_gamma, early_stopping, patience, scheduler_type)
+    evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, output_columns, metrics)

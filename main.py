@@ -10,9 +10,9 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 
 # Zugriff auf Konfigurationswerte
-data_path = config['DEFAULT']['DataPath']
-debug_mode = config.getboolean('DEFAULT', 'Debug')
-newTestFilesOnStartup = config.getboolean('DEFAULT', 'NewTestFilesOnStartup')
+data_path = config['Init']['DataPath']
+debug_mode = config.getboolean('Init', 'Debug')
+newTestFilesOnStartup = config.getboolean('Init', 'NewTestFilesOnStartup')
 
 class Parent:
     """
@@ -231,4 +231,4 @@ if __name__ == "__main__":
         input_columns[i] = "Input - " + input_columns[i]
     for i in range(len(output_columns)):
         output_columns[i] = "Output - " + output_columns[i]
-    run_neural_network(file_path, input_columns, output_columns)
+    run_neural_network(file_path, input_columns, output_columns, mode="OedometerTest")
