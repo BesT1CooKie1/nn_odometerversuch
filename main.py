@@ -113,7 +113,7 @@ class Soil():
 
     def print_result(self):
         """
-        Print the input parameters and calculated results.
+        Print the input parameters and calculated results. JETZT KLAPPT ES
         """
         print("# Material Parameters:")
         print("     Compression Index:", round(self.compression_index, 2), "[-]")
