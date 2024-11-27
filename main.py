@@ -48,7 +48,7 @@ def generate_soil_properties(data_path):
         os.makedirs(data_path)
     save_dicts(data, f"{data_path}soil_properties.{datasetFormat}", file_format=datasetFormat, overwrite=True)
     if debug_mode:
-        print(f"{debugPraefix}Creating an Excel file for the dataset to check the values...\n{debugPraefix}Disabling debug mode will speed up the process and create no Excel file.\n{debugPraefix}Check the config.ini file to turn of the debug mode.")
+        print(f"{debugPraefix}Creating an Excel file for the dataset to check the values...\n{debugPraefix}Disabling debug mode will speed up the process and create no Excel file.\n{debugPraefix}Check the config.ini file to turn off the debug mode.")
         save_dicts(data, f"{data_path}soil_properties.xlsx", file_format="xlsx", overwrite=True)
 
     end_time = time.time()
