@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def generate_compression_index():
     """
     Generate a compression index (Cc) within a realistic range.
@@ -10,6 +11,7 @@ def generate_compression_index():
         Compression index (Cc) typically between 0.1 and 0.5 for geotechnical applications.
     """
     return np.random.uniform(0.1, 0.5)
+
 
 def generate_swelling_index():
     """
@@ -22,6 +24,7 @@ def generate_swelling_index():
     """
     return np.random.uniform(0.01, 0.1)
 
+
 def generate_initial_porosity():
     """
     Generate an initial void ratio (e0).
@@ -32,6 +35,7 @@ def generate_initial_porosity():
         Initial void ratio (e0) typically between 0.5 and 1.5 depending on the material type.
     """
     return np.random.uniform(0.5, 1.5)
+
 
 def generate_initial_stress():
     """
@@ -44,6 +48,7 @@ def generate_initial_stress():
     """
     return np.random.uniform(50, 200)
 
+
 def generate_additional_stress():
     """
     Generate the additional stress (delta_sigma) in kN/m².
@@ -54,6 +59,19 @@ def generate_additional_stress():
         Additional stress (delta_sigma) typically between 10 and 100 kN/m².
     """
     return np.random.uniform(10, 100)
+
+
+def generate_strain_increment():
+    """
+    Generate a realistic strain increment (delta_epsilon) for geotechnical tests.
+
+    Returns
+    -------
+    float
+        Strain increment (delta_epsilon) typically between 0.0001 and 0.01.
+    """
+    return np.random.uniform(0.0001, 0.01)
+
 
 def generate_test_values():
     """
@@ -69,11 +87,11 @@ def generate_test_values():
     Cs = generate_swelling_index()
     e0 = generate_initial_porosity()
     sigma0 = generate_initial_stress()
-    delta_sigma = generate_additional_stress()
+    delta_epsilon = generate_strain_increment()
     return {
         "Cc": Cc,
         "Cs": Cs,
         "e0": e0,
         "sigma0": sigma0,
-        "delta_sigma": delta_sigma
+        "delta_epsilon": delta_epsilon
     }
