@@ -1,41 +1,19 @@
-import torch
-import torch.nn as nn
-from tqdm import tqdm
-import torch.optim as optim
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-import pandas as pd
 import configparser
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
+from handleDataframes import load_data, clear_columns
 
 # Load configuration
 config = configparser.ConfigParser()
-config.read('config.ini')
-
-def load_data(file_path):
-    """
-    Loads data from a file.
-
-    Parameters:
-    file_path (str): The path to the data file. Supported formats are .xlsx, .csv, and .h5.
-
-    Returns:
-    pd.DataFrame: The loaded data as a pandas DataFrame.
-
-    Raises:
-    ValueError: If the file format is not supported.
-    """
-    if file_path.endswith('.xlsx'):
-        data = pd.read_excel(file_path, header=[0, 1])
-    elif file_path.endswith('.csv'):
-        data = pd.read_csv(file_path, header=[0, 1])
-    elif file_path.endswith('.h5'):
-        data = pd.read_hdf(file_path)
-    else:
-        raise ValueError("Unsupported file format. Please use .xlsx, .csv, or .h5")
-    return data
+config.read('./config/config.ini')
 
 def preprocess_data(data, input_columns, output_columns, test_size=0.2, random_state=42, augmentation_noise=0.0):
     """
@@ -72,6 +50,7 @@ def preprocess_data(data, input_columns, output_columns, test_size=0.2, random_s
 
     return X_train, X_test, y_train, y_test, scaler_X, scaler_y
 
+
 def create_tensors(X_train, X_test, y_train, y_test):
     """
     Converts numpy arrays to PyTorch tensors.
@@ -91,6 +70,7 @@ def create_tensors(X_train, X_test, y_train, y_test):
     y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
     return X_train_tensor, X_test_tensor, y_train_tensor, y_test_tensor
 
+
 class NeuralNetwork(nn.Module):
     """
     A neural network model with configurable hidden layers, activation functions, and dropout.
@@ -102,6 +82,7 @@ class NeuralNetwork(nn.Module):
     activation_function (str): Activation function to use ('ReLU', 'Sigmoid', 'Tanh').
     dropout_rate (float): Dropout rate for regularization.
     """
+
     def __init__(self, input_size, output_size, hidden_layer_sizes, activation_function, dropout_rate):
         super(NeuralNetwork, self).__init__()
         layers = []
@@ -110,14 +91,14 @@ class NeuralNetwork(nn.Module):
         # Add hidden layers dynamically
         for size in hidden_layer_sizes:
             layers.append(nn.Linear(prev_size, size))  # Linear transformation
-            layers.append(nn.BatchNorm1d(size))       # Batch normalization
-            if activation_function == 'ReLU':         # Activation function
+            layers.append(nn.BatchNorm1d(size))  # Batch normalization
+            if activation_function == 'ReLU':  # Activation function
                 layers.append(nn.ReLU())
             elif activation_function == 'Sigmoid':
                 layers.append(nn.Sigmoid())
             elif activation_function == 'Tanh':
                 layers.append(nn.Tanh())
-            layers.append(nn.Dropout(dropout_rate))   # Dropout for reducing overfitting
+            layers.append(nn.Dropout(dropout_rate))  # Dropout for reducing overfitting
             prev_size = size
 
         # Output layer
@@ -191,6 +172,7 @@ def train_model(model, criterion, optimizer, X_train_tensor, y_train_tensor, num
                     print("Early stopping triggered")
                     break
 
+
 def evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, output_columns, metrics):
     """
     Evaluates the neural network model on the test data.
@@ -231,6 +213,8 @@ def evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, out
 
         # Plot the predictions if enabled in the config
         plot_predictions(y_test, y_test_pred, output_columns, config)
+
+
 def plot_predictions(y_test, y_pred, output_columns, config):
     """
     Plots the actual vs. predicted values for each output variable.
@@ -283,7 +267,7 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
     if mode == None:
         conf = "NeuralNetworkDefault"
     elif mode == "OedometerTest":
-        conf = "NeuralNetworkOedometerTest"
+        conf = "OedometerNeuralNetwork"
 
     num_epochs = config.getint(conf, 'NumEpochs')
     learning_rate = config.getfloat(conf, 'LearningRate')
@@ -299,12 +283,14 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
     augmentation_noise = config.getfloat(conf, 'AugmentationNoise')
     metrics = config.get(conf, 'Metrics').split(',')
     scheduler_type = config.get(conf, 'SchedulerType')
+    debug = config.getboolean('Init', 'Debug')
 
     data = load_data(file_path)
     if data is None:
         raise ValueError("Data could not be loaded. Please check the file path and format.")
+    clear_columns(data, input_columns + output_columns)
 
-    print("Data loaded successfully:", data.head())  # Debugging line
+    print("Data loaded successfully:\n", data.head()) if debug else None  # Debugging line
 
     X_train, X_test, y_train, y_test, scaler_X, scaler_y = preprocess_data(data, input_columns, output_columns,
                                                                            augmentation_noise=augmentation_noise)
