@@ -1,5 +1,7 @@
-import numpy as np
+# handleTestValues.py
+# Description: This module contains functions to generate test values for soil properties.
 
+import numpy as np
 
 def generate_compression_index():
     """

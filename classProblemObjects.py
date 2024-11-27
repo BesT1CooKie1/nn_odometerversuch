@@ -1,3 +1,6 @@
+# classProblemObjects.py
+# Description: This module contains classes for problem objects.
+
 from configparser import ConfigParser
 import numpy as np
 

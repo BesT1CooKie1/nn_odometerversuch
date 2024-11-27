@@ -1,3 +1,6 @@
+# handleNeuralNetwork.py
+# Description: This module contains functions to handle neural networks.
+
 import configparser
 
 import matplotlib.pyplot as plt
@@ -10,6 +13,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from handleDataframes import load_data, clear_columns
+import os
 
 # Load configuration
 config = configparser.ConfigParser()
@@ -249,11 +253,18 @@ def plot_predictions(y_test, y_pred, output_columns, config):
 
     plt.tight_layout()
     plt.show()
+    # Save to file if enabled in the config
+    if config.getboolean('Visualization', 'SavePlot', fallback=False):
+        plot_path = config.get('Visualization', 'PlotPath', fallback='output/predictions.png')
+        folder = os.path.dirname(plot_path)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        plt.savefig(config['Visualization']['PlotPath'], dpi=300)
 
 
 def run_neural_network(file_path, input_columns, output_columns, mode=None):
     """
-    Runs the neural network training and evaluation pipeline.
+    Runs the neural network training and evaluation process.
 
     Parameters:
     file_path (str): Path to the data file.
@@ -284,13 +295,15 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
     metrics = config.get(conf, 'Metrics').split(',')
     scheduler_type = config.get(conf, 'SchedulerType')
     debug = config.getboolean('Init', 'Debug')
+    save_model = config.getboolean('Training', 'SaveModel')
 
     data = load_data(file_path)
     if data is None:
         raise ValueError("Data could not be loaded. Please check the file path and format.")
     clear_columns(data, input_columns + output_columns)
 
-    print("Data loaded successfully:\n", data.head()) if debug else None  # Debugging line
+    if debug:
+        print("Data loaded successfully:\n", data.head())  # Debugging line
 
     X_train, X_test, y_train, y_test, scaler_X, scaler_y = preprocess_data(data, input_columns, output_columns,
                                                                            augmentation_noise=augmentation_noise)
@@ -306,3 +319,11 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
     train_model(model, criterion, optimizer, X_train_tensor, y_train_tensor, num_epochs, use_scheduler,
                 scheduler_step_size, scheduler_gamma, early_stopping, patience, scheduler_type)
     evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, output_columns, metrics)
+
+    # Save the model if SaveModel is True
+    if save_model:
+        model_path = config.get('Training', 'ModelPath', fallback='./model.pth')
+        if os.path.dirname(model_path) != '' and not os.path.exists(os.path.dirname(model_path)):
+            os.makedirs(os.path.dirname(model_path))
+        torch.save(model.state_dict(), model_path)
+        print(f"Model saved to {model_path}")
