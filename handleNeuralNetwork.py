@@ -203,7 +203,7 @@ def evaluate_model(model, criterion, X_test_tensor, y_test_tensor, scaler_y, out
 
     for i, col in enumerate(output_columns):
         print(f'{col}:')
-        print(f'  Tatsächlich: {y_test[0, i]:.2f}, Vorhergesagt: {y_test_pred[0, i]:.2f}')
+        print(f'  Actually: {y_test[0, i]:.2f}, Predicted: {y_test_pred[0, i]:.2f}')
 
     if 'MSE' in metrics:
         mse = mean_squared_error(y_test, y_test_pred)
@@ -243,12 +243,12 @@ def plot_predictions(y_test, y_pred, output_columns, config):
 
     for i, col in enumerate(output_columns):
         plt.subplot(1, num_outputs, i + 1)
-        plt.scatter(y_test[:, i], y_pred[:, i], alpha=0.6, label='Vorhersage')
+        plt.scatter(y_test[:, i], y_pred[:, i], alpha=0.6, label='Predicted')
         plt.plot([y_test[:, i].min(), y_test[:, i].max()],
                  [y_test[:, i].min(), y_test[:, i].max()], 'r--', label='Ideal')
-        plt.title(f'{col}\nTatsächlich vs. Vorhergesagt')
-        plt.xlabel('Tatsächlich')
-        plt.ylabel('Vorhergesagt')
+        plt.title(f'{col}\nActually vs. Predicted')
+        plt.xlabel('Actually')
+        plt.ylabel('Predicted')
         plt.legend()
 
     plt.tight_layout()
@@ -259,7 +259,8 @@ def plot_predictions(y_test, y_pred, output_columns, config):
         folder = os.path.dirname(plot_path)
         if not os.path.exists(folder):
             os.makedirs(folder)
-        plt.savefig(config['Visualization']['PlotPath'], dpi=300)
+        plt.savefig(config['Visualization']['PlotPath'], bbox_inches='tight')
+        print(f"Plot saved to {plot_path}")
 
 
 def run_neural_network(file_path, input_columns, output_columns, mode=None):
@@ -327,3 +328,30 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
             os.makedirs(os.path.dirname(model_path))
         torch.save(model.state_dict(), model_path)
         print(f"Model saved to {model_path}")
+
+# Load Model
+def load_model(file_path, input_columns, output_columns):
+    """
+    Load a pre-trained neural network model.
+
+    Parameters:
+    file_path (str): Path to the model file.
+    input_columns (list): List of input column names.
+    output_columns (list): List of output column names.
+
+    Returns:
+    nn.Module: The loaded neural network model.
+    """
+    data = load_data(file_path)
+    clear_columns(data, input_columns + output_columns)
+
+    X_train, X_test, y_train, y_test, scaler_X, scaler_y = preprocess_data(data, input_columns, output_columns)
+    X_train_tensor, X_test_tensor, y_train_tensor, y_test_tensor = create_tensors(X_train, X_test, y_train, y_test)
+
+    input_size = X_train_tensor.shape[1]
+    output_size = y_train_tensor.shape[1]
+    model = NeuralNetwork(input_size, output_size, [], 'ReLU', 0.0)
+    model.load_state_dict(torch.load(file_path))
+    model.eval()
+
+    return model

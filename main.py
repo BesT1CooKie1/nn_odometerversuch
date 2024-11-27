@@ -59,13 +59,13 @@ def run_oedometer_test():
     data = load_data(file_path)
     if not os.path.exists(file_path):
         print("Generating new soil properties because the no test-entries exist...")
-        generate_soil_properties(data_path, debug_mode)
+        generate_soil_properties(data_path)
     elif numberOfTestEntrys != len(data):
         print("Generating new soil properties because the number of test-entries do not match...")
-        generate_soil_properties(data_path, debug_mode)
+        generate_soil_properties(data_path)
     elif newDatasetOnStartup:
         print("Generating new soil properties because the newTestFilesOnStartup is set to True...")
-        generate_soil_properties(data_path, debug_mode)
+        generate_soil_properties(data_path)
 
     if not os.path.exists(modelPath):
         print("Starting the neural network process...")
