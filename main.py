@@ -57,35 +57,20 @@ def generate_soil_properties(data_path):
 def run_oedometer_test():
     """
     Run the oedometer test by generating soil properties and running the neural network.
-
-    This function checks for existing soil properties data and generates new data if necessary.
-    It also runs the neural network for the oedometer test.
     """
     file_path = f"{data_path}soil_properties.{datasetFormat}"
     try:
         data = load_data(file_path)
     except FileNotFoundError:
         data = []
-    if not os.path.exists(file_path):
-        print("Generating new soil properties because no test-entries exist...")
-        generate_soil_properties(data_path)
-    elif numberOfTestEntrys != len(data):
-        print("Generating new soil properties because the number of test-entries do not match...")
-        generate_soil_properties(data_path)
-    elif newDatasetOnStartup:
-        print("Generating new soil properties because the newTestFilesOnStartup is set to True...")
+
+    if not os.path.exists(file_path) or numberOfTestEntrys != len(data) or newDatasetOnStartup:
+        print("Generating new soil properties...")
         generate_soil_properties(data_path)
 
-    if not os.path.exists(modelPath):
+    if not os.path.exists(modelPath) or overwrite:
         print("Starting the neural network process...")
-        input_columns = ['Compression Index (Cc)', 'Swelling Index (Cs)', 'Initial Stress (sigma0)',
-                         'Strain Increment (delta_epsilon)']
-        output_columns = ['Additional Stress (delta_sigma)']
-        run_neural_network(file_path, input_columns, output_columns, mode="OedometerTest")
-    elif overwrite:
-        print("Starting the neural network process and overwriting the existing model (trainOnStartup is True)...")
-        input_columns = ['Compression Index (Cc)', 'Swelling Index (Cs)', 'Initial Stress (sigma0)',
-                         'Strain Increment (delta_epsilon)']
+        input_columns = ['Compression Index (Cc)', 'Swelling Index (Cs)', 'Initial Stress (sigma0)', 'Strain Increment (delta_epsilon)']
         output_columns = ['Additional Stress (delta_sigma)']
         run_neural_network(file_path, input_columns, output_columns, mode="OedometerTest")
 

@@ -333,7 +333,6 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
         torch.save(model.state_dict(), model_path)
         print(f"Model saved to {model_path}")
 
-# Load Model
 def load_model(file_path, input_columns, output_columns):
     """
     Load a pre-trained neural network model.
