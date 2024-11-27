@@ -252,15 +252,17 @@ def plot_predictions(y_test, y_pred, output_columns, config):
         plt.legend()
 
     plt.tight_layout()
-    plt.show()
+
     # Save to file if enabled in the config
     if config.getboolean('Visualization', 'SavePlot', fallback=False):
-        plot_path = config.get('Visualization', 'PlotPath', fallback='output/predictions.png')
+        plot_path = config.get('Visualization', 'PlotPath', fallback='./output/predictions.png')
         folder = os.path.dirname(plot_path)
         if not os.path.exists(folder):
             os.makedirs(folder)
-        plt.savefig(config['Visualization']['PlotPath'], bbox_inches='tight')
+        plt.savefig(plot_path, bbox_inches='tight')
         print(f"Plot saved to {plot_path}")
+
+    plt.show()
 
 
 def run_neural_network(file_path, input_columns, output_columns, mode=None):
@@ -296,6 +298,7 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
     metrics = config.get(conf, 'Metrics').split(',')
     scheduler_type = config.get(conf, 'SchedulerType')
     debug = config.getboolean('Init', 'Debug')
+    debugPraefix = config.get('Init', 'DebugPraefix')
     save_model = config.getboolean('Training', 'SaveModel')
 
     data = load_data(file_path)
@@ -304,7 +307,8 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
     clear_columns(data, input_columns + output_columns)
 
     if debug:
-        print("Data loaded successfully:\n", data.head())  # Debugging line
+        print(f"{debugPraefix}Data loaded successfully:\n", data.head(), f"\n{debugPraefix} End of loaded data.")  # Debugging line
+
 
     X_train, X_test, y_train, y_test, scaler_X, scaler_y = preprocess_data(data, input_columns, output_columns,
                                                                            augmentation_noise=augmentation_noise)

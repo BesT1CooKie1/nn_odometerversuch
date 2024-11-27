@@ -2,6 +2,7 @@
 # Description: This module contains functions to handle DataFrames.
 
 import pandas as pd
+import os
 
 def save_dicts(data, file_path, file_format, key='data', overwrite=False):
     """
@@ -33,22 +34,21 @@ def save_dicts(data, file_path, file_format, key='data', overwrite=False):
             pd.concat([existing_df, new_df], ignore_index=True).to_excel(file_path, index=False)
         else:
             new_df.to_excel(file_path, index=False)
-        print(f"Data saved to {file_path}")
+        print(f"Dataset saved to {file_path}")
 
     elif file_format == 'csv':
         if overwrite or not os.path.exists(file_path):
             new_df.to_csv(file_path, index=False)
         else:
             new_df.to_csv(file_path, mode='a', header=False, index=False)
-        print(f"Data saved to {file_path}")
+        print(f"Dataset saved to {file_path}")
 
     elif file_format == 'hdf5' or file_format == 'h5':
         if overwrite or not os.path.exists(file_path):
             new_df.to_hdf(file_path, key=key, mode='w')
         else:
             new_df.to_hdf(file_path, key=key, mode='a', append=True)
-        print(f"Data saved to {file_path}")
-
+        print(f"Dataset saved to {file_path}")
     else:
         raise ValueError("Unsupported file format. Please use 'xlsx', 'csv', or 'hdf5'.")
 
