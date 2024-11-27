@@ -307,7 +307,7 @@ def run_neural_network(file_path, input_columns, output_columns, mode=None):
     clear_columns(data, input_columns + output_columns)
 
     if debug:
-        print(f"{debugPraefix}Data loaded successfully:\n", data.head(), f"\n{debugPraefix} End of loaded data.")  # Debugging line
+        print(f"{debugPraefix}Data loaded successfully:\n", data.head(), f"\n{debugPraefix} End preview data.")  # Debugging line
 
 
     X_train, X_test, y_train, y_test, scaler_X, scaler_y = preprocess_data(data, input_columns, output_columns,
