@@ -44,7 +44,6 @@ def generate_soil_properties(data_path):
         # def __init__(self, e_0:float, C_c:float, delta_epsilon:list, initial_stress:list):
         Soil(test_values['e_0'], test_values['C_c'], test_values['delta_epsilon'], test_values['sigma_0'])
     data = [soil.__dict__() for soil in Soil.instances]
-    print(data)
     # Save the data to a file
     if not os.path.exists(data_path):
         os.makedirs(data_path)

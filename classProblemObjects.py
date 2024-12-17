@@ -2,6 +2,8 @@
 # Description: This module contains classes for problem objects.
 
 from configparser import ConfigParser
+import matplotlib.pyplot as plt
+import numpy as np
 # Import random module
 from random import randint
 
@@ -97,14 +99,16 @@ class Soil(ProblemObject):
 
         self.compression_index = C_c
         self.initial_void_ratio = e_0
-        self.strain_increment = delta_epsilon
+        self.delta_strain_increment = delta_epsilon
 
         self.initial_stress = initial_stress
+        self.strain_increment = self.__calc_strain_increment()
         self.shear_module = self.__generate_e_s()
         self.additional_stress = self.__generate_additional_stress()
         self.__generate_additional_stress()
         super().__init__(units)
         Soil.instances.append(self)
+        self.plot()
 
     def __generate_e_s(self):
         module = []
@@ -131,7 +135,13 @@ class Soil(ProblemObject):
         """
         return (1 + self.initial_void_ratio) / self.compression_index * sigma_0
 
-    def __calc_additional_stress(self, E_s):
+    def __calc_strain_increment(self):
+        epsilon = []
+        for i in range(len(self.initial_stress)):
+            epsilon.append((1+self.initial_void_ratio) / self.compression_index)
+        return epsilon
+
+    def __calc_additional_stress(self, E_s:list):
         """
         Calculate the additional stress (delta_sigma) in kN/m².
 
@@ -140,7 +150,23 @@ class Soil(ProblemObject):
         float
             Additional stress (delta_sigma) in kN/m².
         """
-        return self.strain_increment * E_s
+        additional_stress = []
+        for item in self.delta_strain_increment:
+            additional_stress.append(item * E_s)
+        return additional_stress
+
+    def plot(self):
+        """
+        Plot the the strain increment (delta_epsilon) against the initial stress (sigma_0). Should be a straight line and y-axe is downward.
+        """
+        plt.scatter(self.initial_stress,self.strain_increment, label=f"Odeometer Test")
+        plt.xlabel("Stress (sigma) [kN/m²]")
+        plt.ylabel("Strain Increment (delta_epsilon) [-]")
+        plt.title("Shear Module")
+        plt.legend()
+        plt.gca().invert_yaxis()
+        plt.show()
+
 
     def __dict__(self):
         return {
@@ -148,6 +174,6 @@ class Soil(ProblemObject):
             "Initial Void Ratio (e_0)": self.initial_void_ratio,
             "Initial Stress (sigma_0)": self.initial_stress,
             "Additional Stress (delta_sigma)": self.additional_stress,
-            "Strain Increment (delta_epsilon)": self.strain_increment,
+            "Strain Increment (delta_epsilon)": self.delta_strain_increment,
             "Shear modulus (E_s)": self.shear_module
         }

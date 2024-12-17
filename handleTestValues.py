@@ -50,11 +50,10 @@ def generate_initial_stress():
         Initial stress (sigma0) typically between 50 and 200 kN/m².
     """
     stress = []
-    value = randint(5, 15)
-    for i in range(10):
+    value = randint(50, 200)
+    for i in range(100):
         stress.append(round(value, 0))
-        print(round(value, 0))
-        value = value + randint(5, 15)
+        value = value + randint(5, 25)
     return stress
 
 
@@ -80,11 +79,10 @@ def generate_strain_increment():
         Strain increment (delta_epsilon) typically between 0.0001 and 0.01.
     """
     stress = []
-    value = randint(5, 15)
-    for i in range(10):
+    value = randint(50, 200)
+    for i in range(100):
         stress.append(round(value, 0))
-        print(round(value, 0))
-        value = value + randint(5, 15)
+        value = value + randint(5, 25)
     return stress
 
 def generate_test_values():
