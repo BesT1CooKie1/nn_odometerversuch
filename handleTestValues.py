@@ -2,6 +2,7 @@
 # Description: This module contains functions to generate test values for soil properties.
 
 import numpy as np
+from random import randint
 
 def generate_compression_index():
     """
@@ -12,7 +13,7 @@ def generate_compression_index():
     float
         Compression index (Cc) typically between 0.1 and 0.5 for geotechnical applications.
     """
-    return np.random.uniform(0.1, 0.5)
+    return np.random.uniform(0.001, 1)
 
 
 def generate_swelling_index():
@@ -24,7 +25,7 @@ def generate_swelling_index():
     float
         Swelling index (Cs) typically smaller than Cc, e.g., between 0.01 and 0.1.
     """
-    return np.random.uniform(0.01, 0.1)
+    return np.random.uniform(0.0001, 0.4)
 
 
 def generate_initial_porosity():
@@ -48,7 +49,13 @@ def generate_initial_stress():
     float
         Initial stress (sigma0) typically between 50 and 200 kN/m².
     """
-    return np.random.uniform(50, 200)
+    stress = []
+    value = randint(5, 15)
+    for i in range(10):
+        stress.append(round(value, 0))
+        print(round(value, 0))
+        value = value + randint(5, 15)
+    return stress
 
 
 def generate_additional_stress():
@@ -72,8 +79,13 @@ def generate_strain_increment():
     float
         Strain increment (delta_epsilon) typically between 0.0001 and 0.01.
     """
-    return np.random.uniform(0.0001, 0.01)
-
+    stress = []
+    value = randint(5, 15)
+    for i in range(10):
+        stress.append(round(value, 0))
+        print(round(value, 0))
+        value = value + randint(5, 15)
+    return stress
 
 def generate_test_values():
     """
@@ -85,15 +97,15 @@ def generate_test_values():
         Dictionary containing generated test values for compression index (Cc), swelling index (Cs),
         initial void ratio (e0), initial stress (sigma0), and additional stress (delta_sigma).
     """
-    Cc = generate_compression_index()
-    Cs = generate_swelling_index()
-    e0 = generate_initial_porosity()
-    sigma0 = generate_initial_stress()
+    C_c = 0.005
+    #C_s = generate_swelling_index()
+    e_0 = 1.00
+    sigma_0 = generate_initial_stress()
     delta_epsilon = generate_strain_increment()
     return {
-        "Cc": Cc,
-        "Cs": Cs,
-        "e0": e0,
-        "sigma0": sigma0,
+        "C_c": C_c,
+    #    "Cs": C_s,
+        "e_0": e_0,
+        "sigma_0": sigma_0,
         "delta_epsilon": delta_epsilon
     }

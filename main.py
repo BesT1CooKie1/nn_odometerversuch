@@ -22,9 +22,11 @@ numberOfTestEntrys = config.getint('Init', 'SizeOfDataset')
 datasetFormat = config['Init']['DatasetFormat']
 debugPraefix = config['Init']['DebugPraefix']
 
+
 # Accessing the training configuration
 overwrite = config.getboolean('Training', 'Overwrite')
 saveModel = config.getboolean('Training', 'SaveModel')
+neuronalNetworkEnable = config.getboolean('Training', 'Enable')
 modelPath = config['Training']['ModelPath']
 
 def generate_soil_properties(data_path):
@@ -39,10 +41,10 @@ def generate_soil_properties(data_path):
         print(f"{debugPraefix}Initalizing the generation of soil properties with {numberOfTestEntrys} test entries...")
     for i in tqdm(range(numberOfTestEntrys), desc="Generating soil properties"):
         test_values = generate_test_values()
-        soil = Soil(compression_index=test_values["Cc"], swelling_index=test_values["Cs"],
-                    initial_void_ratio=test_values["e0"], initial_stress=test_values["sigma0"],
-                    strain_increment=test_values["delta_epsilon"])
+        # def __init__(self, e_0:float, C_c:float, delta_epsilon:list, initial_stress:list):
+        Soil(test_values['e_0'], test_values['C_c'], test_values['delta_epsilon'], test_values['sigma_0'])
     data = [soil.__dict__() for soil in Soil.instances]
+    print(data)
     # Save the data to a file
     if not os.path.exists(data_path):
         os.makedirs(data_path)
@@ -70,9 +72,10 @@ def run_oedometer_test():
 
     if not os.path.exists(modelPath) or overwrite:
         print("Starting the neural network process...")
-        input_columns = ['Compression Index (Cc)', 'Swelling Index (Cs)', 'Initial Stress (sigma0)', 'Strain Increment (delta_epsilon)']
+        input_columns = ['Initial Stress (sigma_0)', 'Strain Increment (delta_epsilon)', ]
         output_columns = ['Additional Stress (delta_sigma)']
-        run_neural_network(file_path, input_columns, output_columns, mode="OedometerTest")
+        if neuronalNetworkEnable:
+            run_neural_network(file_path, input_columns, output_columns, mode="OedometerTest")
 
 if __name__ == "__main__":
     run_oedometer_test()
